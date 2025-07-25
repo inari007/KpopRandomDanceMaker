@@ -2,8 +2,10 @@ KPOP RANDOM DANCE MAKER
 
 Creates MP3 file that contains random dance from the files in ./music folder.
 
-SUPPORTS
-- MP3 files
+FEATURES
++ Supports MP3 Files
++ Countdown sounds
++ In order/Random order
 
 REQUIREMENTS
 - Python 3.0.0+
@@ -17,8 +19,4 @@ USAGE
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- Configuration file
-- Custom noise between songs
-- Random song order
-- Add Dockerfile (dát i do .gitignoru)
 - Downloading songs from youtube
