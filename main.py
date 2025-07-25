@@ -6,6 +6,7 @@ import csv
 import glob
 import os
 import configparser
+import random
 
 # Init audio
 final_audio = 0
@@ -54,6 +55,10 @@ def get_song(row):
 
 # Loads information about songs
 music_list = load_music_list()
+
+# Shuffle order of the songs
+if random_order:
+    random.shuffle(music_list)
 
 # Gets all music files
 for row in tqdm(music_list, desc="Cooking the result"):
