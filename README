@@ -14,8 +14,8 @@ REQUIREMENTS
 
 USAGE
 1. Put all the songs in the ./music folder
-2. Put all the information about the songs into the list.csv file in the format (name,start,end) e.g. (soda_pop,0:54,1:21)
-3. Remove or replace the examples (soda_pop,0:54,1:21) and (your_idol,0:50,1:19)
+2. Put all the information about the songs into the list.csv file in the format (name,start,end) e.g. (soda_pop,0:54,1:21), also replace both examples (soda_pop,0:54,1:21) and (your_idol,0:50,1:19)
+3. Set up your settings in config.ini file
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
