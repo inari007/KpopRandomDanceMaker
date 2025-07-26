@@ -8,15 +8,20 @@ FEATURES
 + In order/Random order
 
 REQUIREMENTS
-- Python 3.0.0+
+- Python 3.9.0+
 - pydub (pip install pydub)
 - tqdm (pip install tqdm)
+- yt_dlp (pip install yt-dlp)
 
 USAGE
 1. Put all the songs in the ./music folder
-2. Put all the information about the songs into the list.csv file in the format (name,start,end) e.g. (soda_pop,0:54,1:21), also replace both examples (soda_pop,0:54,1:21) and (your_idol,0:50,1:19)
+2. Put all the information about the songs into the list.csv file in the format (name/URL,start,end) e.g. (soda_pop,0:54,1:21), also replace both examples
 3. Set up your settings in config.ini file
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- Downloading songs from youtube
+- Dynamically replace URL for name of the file in csv after downloading
+- If downloading fails -> don't end the script 
+- If csv start/end invalid -> use full song
+- Add Config GUI
+- Add Music GUI (list.csv)

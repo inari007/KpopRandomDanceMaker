@@ -2,15 +2,15 @@
 
 from tqdm import tqdm
 from pydub import AudioSegment
-import csv
-import glob
-import os
+
 import configparser
 import random
 
+from utils import download_mp3, get_song, load_music_list, is_url
+
 # Init audio
 final_audio = 0
-countdown_audio = 0
+countdown_audio = []
 
 # Parses configuration file
 config = configparser.ConfigParser()
@@ -26,33 +26,6 @@ if countdown_enable:
     countdown_file_path = config['countdown']['sound_file']
     countdown_audio = AudioSegment.from_mp3(countdown_file_path)
 
-# Parses CSV file
-def load_music_list(filepath='./list.csv'):
-    with open(filepath, newline='', encoding='utf-8') as file:
-        return list(csv.DictReader(file))
-
-# Gets audio of the song in the row
-def get_song(row):
-    mp3_files=glob.glob(music_folder + "*.mp3")
-
-    # Finds every song file that matches current row from the list 
-    for file in mp3_files:
-        if os.path.basename(file) == (row['name'] + ".mp3"):
-
-            # Loads audio from the file
-            audio = AudioSegment.from_mp3(music_folder + row['name'] + ".mp3")
-
-            # Split time string into minutes and seconds
-            start_minutes, start_seconds = map(int, row['start'].split(":"))
-            end_minutes, end_seconds = map(int, row['end'].split(":"))
-
-            # Convert to total miniseconds
-            total_start_time = (start_minutes * 60 + start_seconds) * 1000
-            total_end_time = (end_minutes * 60 + end_seconds) * 1000
-
-            return audio[total_start_time:total_end_time]
-    return None
-
 # Loads information about songs
 music_list = load_music_list()
 
@@ -62,7 +35,11 @@ if random_order:
 
 # Gets all music files
 for row in tqdm(music_list, desc="Cooking the result"):
-    current_song = get_song(row)
+
+    # If URL was uses, download it 
+    if is_url(row['name']):
+        download_mp3(row, music_folder)
+    current_song = get_song(row, music_folder)
 
     # If file exists
     if current_song != None:
