@@ -20,7 +20,8 @@ USAGE
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- If downloading fails -> don't end the script 
+- Fix https://www.youtube.com/watch?v=KUvOQlkLNhE&ab_channel=SMTOWN issue
 - If csv start/end invalid -> use full song
 - Add Config GUI
 - Add Music GUI (list.csv)
+- Create exe file

@@ -49,7 +49,6 @@ if download_occurred:
 
 # Gets all music files
 for row in tqdm(music_list, desc="Cooking the result"):
-
     current_song = get_song(row, music_folder)
 
     # If file exists
