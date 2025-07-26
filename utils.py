@@ -59,6 +59,14 @@ def load_music_list(filepath='./list.csv'):
         return list(csv.DictReader(file))
 
 
+# Sets CSV file
+def set_music_list(music_list, column_names, filepath='./list.csv'):
+    with open(filepath, 'w', newline='', encoding='utf-8') as file:
+        writer = csv.DictWriter(file, fieldnames=column_names)
+        writer.writeheader()
+        writer.writerows(music_list)
+
+
 # Gets audio of the song in the row
 def get_song(row, music_folder):
     mp3_files=glob.glob(music_folder + "*.mp3")
@@ -82,6 +90,7 @@ def get_song(row, music_folder):
 
             return audio[total_start_time:total_end_time]
     return None
+
 
 # Checks if string is URL 
 def is_url(string):

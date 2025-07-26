@@ -1,10 +1,10 @@
 KPOP RANDOM DANCE MAKER
 
-Creates MP3 file that contains random dance from the files in ./music folder.
+Creates MP3 file that contains random dance from the local mp3 files or Youtube URL.
 
 FEATURES
-+ Supports MP3 Files
 + Countdown sounds
++ Youtube downloads/Local files
 + In order/Random order
 
 REQUIREMENTS
@@ -14,13 +14,12 @@ REQUIREMENTS
 - yt_dlp (pip install yt-dlp)
 
 USAGE
-1. Put all the songs in the ./music folder
-2. Put all the information about the songs into the list.csv file in the format (name/URL,start,end) e.g. (soda_pop,0:54,1:21), also replace both examples
-3. Set up your settings in config.ini file
+1. Set up your settings in config.ini file
+2. Put all the songs in the music folder
+3. Put all the information about the songs into the list.csv file in the format (name/URL,start,end) e.g. (soda_pop,0:54,1:21), also replace both examples
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- Dynamically replace URL for name of the file in csv after downloading
 - If downloading fails -> don't end the script 
 - If csv start/end invalid -> use full song
 - Add Config GUI
