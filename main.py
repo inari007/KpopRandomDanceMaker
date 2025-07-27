@@ -26,6 +26,11 @@ if countdown_enable:
     countdown_file_path = config['countdown']['sound_file']
     countdown_audio = AudioSegment.from_mp3(countdown_file_path)
 
+    # Error occured
+    if countdown_audio == 0:
+        print("Unable to load countdown sound at " + countdown_file_path)
+        exit(1)
+
 # Loads information about songs
 music_list = load_music_list()
 column_names = list(music_list[0].keys())
@@ -47,12 +52,15 @@ for row in tqdm(music_list, desc="Downloading songs"):
 if download_occurred:
     set_music_list(music_list, column_names)
 
+# Which songs failed to load
+error_songs = [] 
+
 # Gets all music files
 for row in tqdm(music_list, desc="Cooking the result"):
-    current_song = get_song(row, music_folder)
+    current_song, success = get_song(row, music_folder)
 
-    # If file exists
-    if current_song != None:
+    # If file was loaded
+    if success:
 
         # Puts countdown at the start and in between songs
         if len(countdown_audio) > 0:
@@ -61,8 +69,25 @@ for row in tqdm(music_list, desc="Cooking the result"):
         # Adds song to the final audio
         final_audio += current_song
 
+    # Error occured
+    else:
+        error_songs.append(current_song)
+
 # Export the audio
 final_audio.export("random_dance.mp3", format="mp3")
 
-# UwU
-print("Random dance was successfully created!")
+# All songs were successfully loaded
+if len(error_songs) == 0:
+
+    # UwU
+    print("Random dance was successfully created!")
+
+# Any error occured
+else:
+
+    # Not UwU
+    print("Random dance was created but few songs couldn't be added!")
+    print("Failed to add:")
+    for error in error_songs:
+        print(error)
+
