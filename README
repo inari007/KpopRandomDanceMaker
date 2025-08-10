@@ -9,9 +9,9 @@ FEATURES
 
 REQUIREMENTS
 - Python 3.9.0+
-- pydub (pip install pydub)
-- tqdm (pip install tqdm)
-- yt_dlp (pip install yt-dlp)
+- pydub
+- tqdm
+- yt-dlp
 
 USAGE
 1. Set up your settings in config.ini file
@@ -20,7 +20,6 @@ USAGE
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- Fix https://www.youtube.com/watch?v=KUvOQlkLNhE&ab_channel=SMTOWN issue
 - If csv start/end invalid -> use full song
 - Add Config GUI
 - Add Music GUI (list.csv)

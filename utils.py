@@ -7,27 +7,30 @@ import glob
 import os
 import re
 import time
+import json
 
 # Downloads audio from youtube video and saves it as mp3
 def download_mp3(row, music_folder):
 
     # Gets only title of the song
-    sanizedTitle = get_video_safely(get_video_title, row['name'], music_folder)
-    if sanizedTitle == False:
-        return
+    title = get_video_safely(get_video_title, row['name'], music_folder)
+    if title == False:
+        return False
 
     # If was already downloaded
-    filepath = music_folder + sanizedTitle + ".mp3"
+    filepath = music_folder + title + ".mp3"
     if os.path.exists(filepath):
-        row['name'] = sanizedTitle
-        return
+
+        # Set title instead of URL
+        row['name'] = title
+        return False
     
     # Gets content of the song
     if get_video_safely(get_video_content, row['name'], music_folder) == False:
-        return
+        return False
     
-    # Set title instead of URL
-    row['name'] = sanizedTitle
+    row['name'] = title
+    return True
 
 
 # Tries 3 times and ensures that downloading doesn't kill the process
@@ -41,12 +44,11 @@ def get_video_safely(get_vid_func, url, music_folder, attempts=3):
     return False
 
 # Gets title of the song
-def get_video_title(url, music_folder):
+def get_video_title(url, _):
     with yt_dlp.YoutubeDL({'quiet': True, 'no_warnings': True}) as ydl:
         info = ydl.extract_info(url, download=False)
         title = info.get('title', 'audio')
-        sanizedTitle = sanitizeFilename(title)
-        return sanizedTitle
+        return title
     
 # Gets content of the song (downloads mp3)
 def get_video_content(url, music_folder):
@@ -56,7 +58,7 @@ def get_video_content(url, music_folder):
         'postprocessors': [{
             'key': 'FFmpegExtractAudio',
             'preferredcodec': 'mp3',
-            'preferredquality': '192',
+            'preferredquality': '320',
         }],
         'quiet': True,
         'no_warnings': True,
@@ -69,14 +71,17 @@ def get_video_content(url, music_folder):
 
     return True
 
-# Removes sussy characters
-def removeIllegalCharacters(title):
-    return title.replace('\u00A0', ' ').replace('\uFF1A', ':')
-
-
-# Makes title of the video saveable on the Windows
-def sanitizeFilename(title):
-    return title.replace("/", "⧸").replace('\uFF1A', ':')
+# OS changes characters to those saveable on filesystem, get them back
+def unsanitizeTitle(title):
+    replacements = {
+        '：' : ':',
+        '⧸' : '/',
+        '｜' : '|',
+        '＂' : '"',
+    }
+    for filesystemChar, originalChar in replacements.items():
+        title = title.replace(filesystemChar, originalChar)
+    return title
 
 
 # Parses CSV file
@@ -102,7 +107,7 @@ def get_song(row, music_folder):
     for file in mp3_files:
 
         filename = os.path.basename(file)
-        if filename == current_song:
+        if unsanitizeTitle(filename) == current_song:
 
             # Loads audio from the file
             audio = AudioSegment.from_mp3(music_folder + filename)

@@ -9,8 +9,8 @@ import random
 from utils import download_mp3, get_song, load_music_list, set_music_list, is_url
 
 # Init audio
-final_audio = 0
-countdown_audio = []
+final_audio = AudioSegment.empty()
+countdown_audio = AudioSegment.empty()
 
 # Parses configuration file
 config = configparser.ConfigParser()
@@ -45,8 +45,10 @@ for row in tqdm(music_list, desc="Downloading songs"):
 
     # If URL was uses, download it 
     if is_url(row['name']):
-        download_mp3(row, music_folder)
-        download_occurred = True
+
+        # If at least one song was downloaded
+        if download_mp3(row, music_folder):
+            download_occurred = True
 
 # Updates CSV file if neccessary (URL->files)
 if download_occurred:
