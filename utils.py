@@ -120,6 +120,10 @@ def get_song(row, music_folder):
             total_start_time = (start_minutes * 60 + start_seconds) * 1000
             total_end_time = (end_minutes * 60 + end_seconds) * 1000
 
+            # Invalid format
+            if total_start_time >= total_end_time:
+                total_start_time = 0 
+
             return audio[total_start_time:total_end_time], True
     return row['name'], False
 

@@ -20,7 +20,6 @@ USAGE
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- If csv start/end invalid -> use full song
 - Add Config GUI
 - Add Music GUI (list.csv)
 - Create exe file
