@@ -8,6 +8,7 @@ import os
 import re
 import time
 import json
+from tqdm import tqdm
 
 # Downloads audio from youtube video and saves it as mp3
 def download_mp3(row, music_folder):
@@ -137,3 +138,7 @@ def is_url(string):
         re.IGNORECASE
     )
     return re.match(regex, string) is not None
+
+# Print status bar if needed
+def printable_loop(iterable, use_tqdm: bool, **tqdm_kwargs):
+    return tqdm(iterable, **tqdm_kwargs) if use_tqdm else iterable
