@@ -7,9 +7,9 @@ from pathlib import Path
 from PySide6.QtWidgets import (
         QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QPushButton,
         QCheckBox, QFileDialog, QTableWidget, QTableWidgetItem, QHeaderView,
-        QMessageBox, QLineEdit, QGroupBox
+        QMessageBox, QLineEdit, QGroupBox, QProgressBar, QSpacerItem, QSizePolicy
     )
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, QThread, Signal
 
 from random_dance import KpopRandomDanceMaker
 
@@ -38,9 +38,9 @@ class UI(QWidget):
         cfg_group = QGroupBox("Configuration")
         cfg_layout = QVBoxLayout()
 
-        self.chk_countdown = QCheckBox("Enable countdown")
+        self.chk_countdown = QCheckBox("Add countdowns")
         self.btn_countdown_file = QPushButton("No file selected")
-        self.chk_random = QCheckBox("Randomize order on load")
+        self.chk_random = QCheckBox("Random song order")
         self.btn_select_folder = QPushButton("No folder selected")
         
         cfg_layout.addWidget(self.chk_countdown)
@@ -56,14 +56,8 @@ class UI(QWidget):
         ops = QVBoxLayout()
         self.btn_add_song = QPushButton("Add song")
         self.btn_remove_song = QPushButton("Delete")
-        self.btn_swap = QPushButton("Swap two selected")
-        self.btn_move_up = QPushButton("Move up")
-        self.btn_move_down = QPushButton("Move down")
         ops.addWidget(self.btn_add_song)
         ops.addWidget(self.btn_remove_song)
-        ops.addWidget(self.btn_swap)
-        ops.addWidget(self.btn_move_up)
-        ops.addWidget(self.btn_move_down)
         left.addLayout(ops)
 
         main.addLayout(left, 0)
@@ -73,15 +67,24 @@ class UI(QWidget):
         self.table = QTableWidget(0, 3)
         self.table.setHorizontalHeaderLabels(["URL / Name", "Start", "End"])
         self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setSelectionBehavior(QTableWidget.SelectRows)
         self.table.setEditTriggers(QTableWidget.DoubleClicked | QTableWidget.EditKeyPressed | QTableWidget.SelectedClicked)
+
+        self.table.setDragEnabled(True)
+        self.table.setAcceptDrops(True)
+        self.table.setDropIndicatorShown(True)
+        self.table.setDragDropOverwriteMode(False)
+        self.table.setDragDropMode(QTableWidget.InternalMove)
+
         right.addWidget(self.table)
 
         # Cook the results button
-        bottom = QHBoxLayout()
-        right.addLayout(bottom)
+        self.bottom = QHBoxLayout()
+        right.addLayout(self.bottom)
         self.btn_cook = QPushButton("Cook the playlist")
-        bottom.addWidget(self.btn_cook)
+        self.btn_cook.setStyleSheet("padding-top: 5px; padding-bottom: 5px; padding-left: 20px; padding-right: 20px;")
+        self.bottom.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        self.bottom.addWidget(self.btn_cook)
+        self.bottom.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
         main.addLayout(right, 1)
 
     def _set_callbacks(self):
@@ -95,11 +98,6 @@ class UI(QWidget):
         # Song operations
         self.btn_add_song.clicked.connect(self.add_song)
         self.btn_remove_song.clicked.connect(self.remove_selected)
-        self.btn_swap.clicked.connect(self.swap_two_selected)
-
-        # Song item operations
-        self.btn_move_up.clicked.connect(lambda: self.move_selected(-1))
-        self.btn_move_down.clicked.connect(lambda: self.move_selected(1))
 
         # Cook operation
         self.btn_cook.clicked.connect(self.create_playlist)
@@ -147,22 +145,10 @@ class UI(QWidget):
 
     # ----------------- Song actions -----------------
 
-
-    def import_from_folder(self):
-        folder = self.lbl_folder.text()
-        if not folder or folder == 'No folder selected':
-            QMessageBox.warning(self, "No folder", "Please select a music folder first.")
-            return
-        folder = Path(folder)
-        files = [p for p in folder.iterdir() if p.suffix.lower() in AUDIO_EXTS and p.is_file()]
-        for f in files:
-            name = f.stem
-            self._append_song({'name': name, 'start': '', 'end': '', 'path': str(f)})
-        self._refresh_order()
-
     def add_song(self):
-        self._append_song({'name': 'New Song', 'start': '', 'end': ''})
-        self._refresh_order()
+        newElement = {'name': 'New Song', 'start': '0:00', 'end': '0:00'}
+        self._append_song(newElement)
+        self.engine.addSong(newElement)
 
     def remove_selected(self):
         rows = sorted({i.row() for i in self.table.selectedIndexes()}, reverse=True)
@@ -170,38 +156,29 @@ class UI(QWidget):
             return
         for r in rows:
             self.table.removeRow(r)
-        self._refresh_order()
-
-    def swap_two_selected(self):
-        rows = sorted({i.row() for i in self.table.selectedIndexes()})
-        if len(rows) != 2:
-            QMessageBox.information(self, "Select exactly two rows", "Please select exactly two rows to swap.")
-            return
-        r1, r2 = rows
-        items1 = [self.table.item(r1, c).text() if self.table.item(r1, c) else '' for c in range(1, 4)]
-        items2 = [self.table.item(r2, c).text() if self.table.item(r2, c) else '' for c in range(1, 4)]
-        for c in range(1, 4):
-            self.table.setItem(r1, c, QTableWidgetItem(items2[c-1]))
-            self.table.setItem(r2, c, QTableWidgetItem(items1[c-1]))
-
-    def move_selected(self, direction: int):
-        rows = sorted({i.row() for i in self.table.selectedIndexes()})
-        if not rows:
-            return
-        row = rows[0]
-        new_row = row + direction
-        if new_row < 0 or new_row >= self.table.rowCount():
-            return
-        for c in range(1, 4):
-            a = self.table.item(row, c).text() if self.table.item(row, c) else ''
-            b = self.table.item(new_row, c).text() if self.table.item(new_row, c) else ''
-            self.table.setItem(new_row, c, QTableWidgetItem(a))
-            self.table.setItem(row, c, QTableWidgetItem(b))
-        self.table.selectRow(new_row)
-        self._refresh_order()
+            self.engine.removeSong(r)
+        
 
     def create_playlist(self):
-        pass
+
+        self.bottom.removeWidget(self.btn_cook)
+        self.btn_cook.hide()
+
+        self.progress = QProgressBar()
+        self.progress.setRange(0, self.table.rowCount() + 1)
+        self.bottom.addWidget(self.progress)
+
+        self.chef = Chef()
+        self.chef.setRecipe(self.engine.cookRandomDance)
+        self.chef.progress.connect(self.progress.setValue)
+        self.chef.finished.connect(self.create_playlist_finish)
+        self.chef.start()
+
+    def create_playlist_finish(self):
+        self.bottom.removeWidget(self.progress)
+        self.progress.deleteLater()
+        self.btn_cook.show()
+        self.bottom.addWidget(self.btn_cook)
 
     # ----------------- Save/Load -----------------
     def get_songs_from_table(self):
@@ -226,16 +203,20 @@ class UI(QWidget):
         self.table.setItem(r, 1, start_item)
         self.table.setItem(r, 2, end_item)
 
-    def _refresh_order(self):
-        for r in range(self.table.rowCount()):
-            item = self.table.item(r, 0)
-            if not item:
-                item = QTableWidgetItem(str(r+1))
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
-                self.table.setItem(r, 0, item)
-            else:
-                item.setText(str(r+1))
-                item.setFlags(item.flags() & ~Qt.ItemIsEditable)
+class Chef(QThread):
+    progress = Signal(int)
+    progress_current = 0 
+
+    def run(self):
+        if self.recipe:
+            self.recipe(self.advance)
+
+    def advance(self):
+        self.progress_current = self.progress_current + 1
+        self.progress.emit(self.progress_current)
+
+    def setRecipe(self, func):
+        self.recipe = func
 
 
 if __name__ == '__main__':
