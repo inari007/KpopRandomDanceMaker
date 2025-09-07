@@ -8,10 +8,11 @@ FEATURES
 + In order/Random order
 
 REQUIREMENTS
+- ffmpeg
 - Python 3.9.0+
 - pydub
 - tqdm
-- yt-dlp
+- yt_dlp
 
 USAGE
 1. Set up your settings in config.ini file
