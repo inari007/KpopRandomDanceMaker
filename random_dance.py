@@ -3,8 +3,10 @@
 from tqdm import tqdm
 from pydub import AudioSegment
 
+import numpy as np
 import configparser
 import random
+import copy
 
 from utils import download_mp3, get_song, load_music_list, set_music_list, is_url, printable_loop
 
@@ -75,6 +77,20 @@ class KpopRandomDanceMaker():
 
     def getSongs(self):
         return self.music_list
+    
+    def addSong(self, song):
+        self.music_list.append(song)
+        self.writeSongs()
+    
+    def removeSong(self, songIndex):
+        del self.music_list[songIndex]
+        self.writeSongs()
+
+    def setSongProperty(self, songIndex, property, value):
+        if songIndex >= len(self.music_list):
+            return 
+        self.music_list[songIndex][property] = value
+        self.writeSongs()
 
     # Updates CSV file if neccessary (URL->files)
     def writeSongs(self):
@@ -82,32 +98,46 @@ class KpopRandomDanceMaker():
 
     def getErrorSongs(self):
         return self.error_songs
+    
+    def cookRandomDance(self, emit_func=None, setRowUI=None):
+        self.music_list_indeces = np.arange(len(self.music_list))
+        self.finished_list = copy.deepcopy(self.music_list)
+        self.downloadSongs(emit_func, setRowUI)
+        self.createAudio(emit_func)
 
-    def downloadSongs(self):
+    def downloadSongs(self, emit_func, setRowUI):
         if self.config['random_order']:
-            random.shuffle(self.music_list)
+            np.random.shuffle(self.music_list_indeces)
+            self.finished_list = [self.finished_list[i] for i in self.music_list_indeces]
 
-        download_occurred = False 
-        for row in printable_loop(self.music_list, self.enable_printing, desc="Downloading songs"):
+        index = 0 
+        for row in printable_loop(self.finished_list, self.enable_printing, desc="Downloading songs"):
 
             # If URL was uses, download it 
             if is_url(row['name']):
 
                 # If at least one song was downloaded
                 if download_mp3(row, self.config['music_folder']):
-                    download_occurred = True
+                    original_index = self.music_list_indeces[index]
+                    self.music_list[original_index]['name'] = row['name']
+                    self.writeSongs()
+                    if self.enable_printing == False:
+                        setRowUI(original_index, row['name'])
+            
+            # UI loading bar
+            if self.enable_printing == False:
+                emit_func()
 
-        if download_occurred:
-            self.writeSongs()
+            index = index + 1
 
-    def cookRandomDance(self):
-        for row in printable_loop(self.music_list, self.enable_printing, desc="Cooking the result"):
+    def createAudio(self, emit_func):
+        for row in printable_loop(self.finished_list, self.enable_printing, desc="Cooking the result"):
             current_song, success = get_song(row, self.config['music_folder'])
 
             if success:
 
                 # Adds countdown
-                if len(self.countdown_audio) > 0:
+                if len(self.countdown_audio) > 0 and len(current_song) > 0:
                     self.final_audio += self.countdown_audio
                 
                 # Adds song
@@ -117,12 +147,15 @@ class KpopRandomDanceMaker():
             else:
                 self.error_songs.append(current_song)
 
+            # UI loading bar
+            if self.enable_printing == False:
+                emit_func()
+
         self.final_audio.export("random_dance.mp3", format="mp3")
 
 
 if __name__ == '__main__':
     engine = KpopRandomDanceMaker(enable_printing=True)
-    engine.downloadSongs()
     engine.cookRandomDance()
 
     error_songs = engine.getErrorSongs()

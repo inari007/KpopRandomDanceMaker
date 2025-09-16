@@ -18,14 +18,14 @@ AUDIO_EXTS = {'.mp3'}
 class UI(QWidget):
     def __init__(self, engine):
         super().__init__()
-        # Set UI elements
+
         self.setWindowTitle("Kpop Random Dance Maker")
         self.resize(1000, 600)
         self._build_ui()
         self._set_callbacks()
 
         # Load init data (config, songs)
-        self.engine = engine    # backend
+        self.engine = engine
         self.load_config_default()
         self.load_songs_default()
 
@@ -55,7 +55,7 @@ class UI(QWidget):
         # Song operations box
         ops = QVBoxLayout()
         self.btn_add_song = QPushButton("Add song")
-        self.btn_remove_song = QPushButton("Delete")
+        self.btn_remove_song = QPushButton("Remove")
         ops.addWidget(self.btn_add_song)
         ops.addWidget(self.btn_remove_song)
         left.addLayout(ops)
@@ -82,9 +82,13 @@ class UI(QWidget):
         right.addLayout(self.bottom)
         self.btn_cook = QPushButton("Cook the playlist")
         self.btn_cook.setStyleSheet("padding-top: 5px; padding-bottom: 5px; padding-left: 20px; padding-right: 20px;")
-        self.bottom.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        
+        self.left_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+        self.right_spacer = QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum)
+
+        self.bottom.addItem(self.left_spacer)
         self.bottom.addWidget(self.btn_cook)
-        self.bottom.addSpacerItem(QSpacerItem(0, 0, QSizePolicy.Expanding, QSizePolicy.Minimum))
+        self.bottom.addItem(self.right_spacer)
         main.addLayout(right, 1)
 
     def _set_callbacks(self):
@@ -95,12 +99,31 @@ class UI(QWidget):
         self.chk_random.clicked.connect(self.check_random)
         self.btn_select_folder.clicked.connect(self.select_music_folder)
 
+        # Table operations
+        self.table.cellChanged.connect(self.editCell)
+
         # Song operations
         self.btn_add_song.clicked.connect(self.add_song)
         self.btn_remove_song.clicked.connect(self.remove_selected)
 
         # Cook operation
         self.btn_cook.clicked.connect(self.create_playlist)
+
+    def editCell(self, row, column):
+        item = self.table.item(row, column)
+        if item is None:
+            return
+        value = item.text()
+        if column == 0:
+            self.engine.setSongProperty(row, "name", value)
+        elif column == 1:
+            self.engine.setSongProperty(row, "start", value)
+        elif column == 2:
+            self.engine.setSongProperty(row, "end", value)
+
+    def setCellName(self, row, value):
+        value_item = QTableWidgetItem(value)
+        self.table.setItem(row, 0, value_item)
 
     # ----------------- Default loading -----------------
 
@@ -158,27 +181,27 @@ class UI(QWidget):
             self.table.removeRow(r)
             self.engine.removeSong(r)
         
-
     def create_playlist(self):
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 2 * self.table.rowCount() + 1)
 
-        self.bottom.removeWidget(self.btn_cook)
+        self.bottom.takeAt(2)
+        self.bottom.takeAt(0)
+        self.bottom.replaceWidget(self.btn_cook, self.progress)
         self.btn_cook.hide()
 
-        self.progress = QProgressBar()
-        self.progress.setRange(0, self.table.rowCount() + 1)
-        self.bottom.addWidget(self.progress)
-
         self.chef = Chef()
-        self.chef.setRecipe(self.engine.cookRandomDance)
+        self.chef.setRecipes(self.engine.cookRandomDance, self.setCellName)
         self.chef.progress.connect(self.progress.setValue)
         self.chef.finished.connect(self.create_playlist_finish)
         self.chef.start()
 
     def create_playlist_finish(self):
-        self.bottom.removeWidget(self.progress)
-        self.progress.deleteLater()
         self.btn_cook.show()
-        self.bottom.addWidget(self.btn_cook)
+        self.bottom.replaceWidget(self.progress, self.btn_cook)
+        self.progress.deleteLater()
+        self.bottom.insertItem(0, self.left_spacer)
+        self.bottom.addItem(self.right_spacer)
 
     # ----------------- Save/Load -----------------
     def get_songs_from_table(self):
@@ -205,18 +228,20 @@ class UI(QWidget):
 
 class Chef(QThread):
     progress = Signal(int)
+    currentRow = Signal(int)
     progress_current = 0 
 
     def run(self):
         if self.recipe:
-            self.recipe(self.advance)
+            self.recipe(self.advance, self.setRowUI)
 
     def advance(self):
         self.progress_current = self.progress_current + 1
         self.progress.emit(self.progress_current)
 
-    def setRecipe(self, func):
+    def setRecipes(self, func, funcUI):
         self.recipe = func
+        self.setRowUI = funcUI
 
 
 if __name__ == '__main__':
