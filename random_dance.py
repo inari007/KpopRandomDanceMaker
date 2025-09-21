@@ -90,7 +90,6 @@ class KpopRandomDanceMaker():
         if songIndex >= len(self.music_list):
             return 
         self.music_list[songIndex][property] = value
-        self.writeSongs()
 
     # Updates CSV file if neccessary (URL->files)
     def writeSongs(self):

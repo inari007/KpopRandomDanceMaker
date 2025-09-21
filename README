@@ -21,7 +21,6 @@ USAGE
 4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
 
 TODO
-- Drag and drop fix
 - Loading bar 3 titles (Downloading songs, Preparing audio, Exporting audio)
 - Testing
 - Create exe file

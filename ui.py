@@ -2,6 +2,7 @@ import sys
 import os
 import json
 import random
+import math
 from pathlib import Path
 
 from PySide6.QtWidgets import (
@@ -64,17 +65,7 @@ class UI(QWidget):
 
         # Song table
         right = QVBoxLayout()
-        self.table = QTableWidget(0, 3)
-        self.table.setHorizontalHeaderLabels(["URL / Name", "Start", "End"])
-        self.table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
-        self.table.setEditTriggers(QTableWidget.DoubleClicked | QTableWidget.EditKeyPressed | QTableWidget.SelectedClicked)
-
-        self.table.setDragEnabled(True)
-        self.table.setAcceptDrops(True)
-        self.table.setDropIndicatorShown(True)
-        self.table.setDragDropOverwriteMode(False)
-        self.table.setDragDropMode(QTableWidget.InternalMove)
-
+        self.table = SongTable()
         right.addWidget(self.table)
 
         # Cook the results button
@@ -100,7 +91,7 @@ class UI(QWidget):
         self.btn_select_folder.clicked.connect(self.select_music_folder)
 
         # Table operations
-        self.table.cellChanged.connect(self.editCell)
+        self.table.dropSignal.connect(self.dragAndDropOccured)
 
         # Song operations
         self.btn_add_song.clicked.connect(self.add_song)
@@ -109,17 +100,12 @@ class UI(QWidget):
         # Cook operation
         self.btn_cook.clicked.connect(self.create_playlist)
 
-    def editCell(self, row, column):
-        item = self.table.item(row, column)
-        if item is None:
-            return
-        value = item.text()
-        if column == 0:
-            self.engine.setSongProperty(row, "name", value)
-        elif column == 1:
-            self.engine.setSongProperty(row, "start", value)
-        elif column == 2:
-            self.engine.setSongProperty(row, "end", value)
+    def dragAndDropOccured(self):
+        for row in range(self.table.rowCount()):
+            self.engine.setSongProperty(row, "name", self.table.item(row, 0).text())
+            self.engine.setSongProperty(row, "start", self.table.item(row, 1).text())
+            self.engine.setSongProperty(row, "end", self.table.item(row, 2).text())
+        self.engine.writeSongs()
 
     def setCellName(self, row, value):
         value_item = QTableWidgetItem(value)
@@ -135,9 +121,12 @@ class UI(QWidget):
         self.btn_select_folder.setText(os.path.basename(os.path.normpath(config['music_folder'])))
 
     def load_songs_default(self):
+        self.table.blockSignals(True)
         songs = self.engine.getSongs()
         for row in songs:
             self._append_song({'name': row['name'], 'start': row['start'], 'end': row['end']})
+
+        self.table.blockSignals(False)
         
 
     
@@ -243,6 +232,67 @@ class Chef(QThread):
         self.recipe = func
         self.setRowUI = funcUI
 
+class SongTable(QTableWidget):
+    dropSignal = Signal()
+
+    def __init__(self):
+        super().__init__(0, 3)
+        self.setHorizontalHeaderLabels(["URL / Name", "Start", "End"])
+        self.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
+        self.setEditTriggers(QTableWidget.DoubleClicked |
+                             QTableWidget.EditKeyPressed |
+                             QTableWidget.SelectedClicked)
+
+        self.setSelectionBehavior(QTableWidget.SelectRows)
+        self.setSelectionMode(QTableWidget.SingleSelection)
+
+        self.setDragEnabled(True)
+        self.setAcceptDrops(True)
+        self.setDropIndicatorShown(True)
+        self.setDragDropOverwriteMode(False)
+        self.setDragDropMode(QTableWidget.InternalMove)
+        self.setDefaultDropAction(Qt.MoveAction)
+
+    def dragEnterEvent(self, event):
+        if event.source() is self:
+            event.setDropAction(Qt.MoveAction)
+            event.accept()
+        else:
+            event.ignore()
+
+    def moveItemsToRow(self, src_row, dst_row):
+        for col in range(self.columnCount()):
+            src_item = self.takeItem(src_row, col)
+            self.setItem(dst_row, col, src_item)
+
+    def dropEvent(self, event):
+        src_row = self.currentRow()
+        if src_row < 0:
+            event.ignore()
+            return
+
+        pos = event.position().toPoint()
+        dest_row = self.rowAt(pos.y())
+
+        if src_row < dest_row:
+            insert_row = dest_row + 1
+            self.insertRow(insert_row)
+            self.moveItemsToRow(src_row, insert_row)
+
+            for row in range(src_row, dest_row):
+                self.moveItemsToRow(row + 1, row)
+
+            self.removeRow(dest_row)
+        else:
+            insert_row = dest_row
+            self.insertRow(dest_row)
+            self.moveItemsToRow(src_row + 1, insert_row)
+            self.removeRow(src_row + 1)
+        
+        self.clearSelection()
+        self.selectRow(dest_row if src_row < dest_row else insert_row)
+        self.dropSignal.emit()
+        return
 
 if __name__ == '__main__':
     engine = KpopRandomDanceMaker(enable_printing=False)
