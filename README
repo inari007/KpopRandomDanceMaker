@@ -17,11 +17,14 @@ REQUIREMENTS
 REQUIREMENTS FOR UI
 - PySide6
 
-USAGE
+USAGE VIA UI
+1. Run script in cmd in the project root folder: Windows: "python ui.py" Linux: "python3 ui.py" 
+
+USAGE VIA TERMINAL
 1. Set up your settings in config.ini file
 2. Put all the songs in the music folder
 3. Put all the information about the songs into the list.csv file in the format (name/URL,start,end) e.g. (soda_pop,0:54,1:21), also replace both examples
-4. Run script in cmd in the project root folder: Windows: "python main.py" Linux: "python3 main.py" 
+4. Run script in cmd in the project root folder: Windows: "python random_dance.py" Linux: "python3 random_dance.py" 
 
 TODO
 - Loading bar 3 titles (Downloading songs, Preparing audio, Exporting audio)
