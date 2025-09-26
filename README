@@ -14,6 +14,9 @@ REQUIREMENTS
 - tqdm
 - yt_dlp
 
+REQUIREMENTS FOR UI
+- PySide6
+
 USAGE
 1. Set up your settings in config.ini file
 2. Put all the songs in the music folder
