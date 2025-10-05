@@ -11,6 +11,7 @@ from PySide6.QtWidgets import (
         QMessageBox, QLineEdit, QGroupBox, QProgressBar, QSpacerItem, QSizePolicy
     )
 from PySide6.QtCore import Qt, QThread, Signal
+from PySide6.QtGui import QColor
 
 from random_dance import KpopRandomDanceMaker
 
@@ -191,6 +192,24 @@ class UI(QWidget):
         self.progress.deleteLater()
         self.bottom.insertItem(0, self.left_spacer)
         self.bottom.addItem(self.right_spacer)
+
+        # Check for failed songs
+        for index, isError in enumerate(self.engine.error_songs):
+            song_index = self.engine.music_list_indeces[index]
+
+            # Color the failed song red
+            if isError:
+                self.colorRow(rowIndex=song_index, colorRGB=(244, 67, 54))
+
+            # Color the failed song green
+            else:
+                self.colorRow(rowIndex=song_index, colorRGB=(76, 175, 80))
+            
+    def colorRow(self, rowIndex, colorRGB):
+        for col in range(self.table.columnCount()):
+            item = self.table.item(rowIndex, col)
+            if item:
+                item.setBackground(QColor(*colorRGB))
 
     # ----------------- Save/Load -----------------
     def get_songs_from_table(self):

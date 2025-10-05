@@ -96,19 +96,26 @@ class KpopRandomDanceMaker():
         set_music_list(self.music_list, self.column_names)
 
     def getErrorSongs(self):
-        return self.error_songs
+        error_songs_output = []
+        for isError, index in enumerate(self.error_songs):
+            if isError:
+                song_index = self.music_list_indeces[index]
+                error_songs_output.append(self.music_list[song_index])
+        return error_songs_output
     
     def cookRandomDance(self, emit_func=None, setRowUI=None):
+        self.error_songs = []
+
         self.music_list_indeces = np.arange(len(self.music_list))
         self.finished_list = copy.deepcopy(self.music_list)
+        if self.config['random_order']:
+            np.random.shuffle(self.music_list_indeces)
+            self.finished_list = [self.finished_list[i] for i in self.music_list_indeces]
+        
         self.downloadSongs(emit_func, setRowUI)
         self.createAudio(emit_func)
 
     def downloadSongs(self, emit_func, setRowUI):
-        if self.config['random_order']:
-            np.random.shuffle(self.music_list_indeces)
-            self.finished_list = [self.finished_list[i] for i in self.music_list_indeces]
-
         index = 0 
         for row in printable_loop(self.finished_list, self.enable_printing, desc="Downloading songs"):
 
@@ -142,9 +149,8 @@ class KpopRandomDanceMaker():
                 # Adds song
                 self.final_audio += current_song
 
-            # Error occured
-            else:
-                self.error_songs.append(current_song)
+            # Error info
+            self.error_songs.append(not success)
 
             # UI loading bar
             if self.enable_printing == False:
